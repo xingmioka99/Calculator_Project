@@ -35,6 +35,7 @@ struct CalculationRecord {
 };
 
 // +Utility Class
+// Se Nita
 class Utils {
 public:
     //static because we dont need to instantiate Utils
@@ -63,7 +64,7 @@ public:
 };
 
 // +Number Converter Class
-// vannydet
+// vannydet & chheangsing
 class NumberConverter {
 private:
     // only digits and letters up to base 36
@@ -251,7 +252,8 @@ public:
         if (file.is_open()) {
             file << "CALC," << rec.timestamp << "," << base1 << "," << op1 
                  << "," << operation << "," << base2 << "," << op2 
-                 << "," << rec.decimalResult << "\n";
+                 << "," << rec.decimalResult << "," << rec.binaryResult << "," << rec.octalResult << "," << rec.hexResult << "\n";
+
         }
         file.close();
     }
@@ -266,8 +268,8 @@ public:
         for (size_t i = 0; i < conversions.size(); i++) {
             const auto& rec = conversions[i];
             cout << (i + 1) << ". [" << rec.timestamp << "] "
-                 << rec.inputValue << " (" << rec.sourceBase << ") → "
-                 << rec.outputValue << " (" << rec.targetBase << ")\n";
+                 << rec.inputValue << " {" << rec.sourceBase << "} to "
+                 << rec.outputValue << " {" << rec.targetBase << "}\n";
         }
         
     }
@@ -282,9 +284,9 @@ public:
         for (size_t i = 0; i < calculations.size(); i++) {
             const auto& rec = calculations[i];
             cout << (i + 1) << ". [" << rec.timestamp << "] "
-                 << rec.firstOperand << "₍" << rec.firstBase << "₎ "
+                 << rec.firstOperand <<"(" << rec.firstBase << ") "
                  << rec.operation << " "
-                 << rec.secondOperand << "₍" << rec.secondBase << "₎\n"
+                 << rec.secondOperand << "(" << rec.secondBase << ")\n"
                  << "   Dec: " << rec.decimalResult << "  Bin: " << rec.binaryResult
                  << "  Oct: " << rec.octalResult << "  Hex: " << rec.hexResult << "\n";
         }
@@ -294,9 +296,6 @@ public:
 //+ Authentication Class
 // Se Nita
 class Authentication {
-private:
-    static const string CRED_FILE;
-    
 public:
     // Check if user exists so we dont duplicate
     static bool userExists(const string& username) {
@@ -338,12 +337,11 @@ public:
             cout << RED << "Error: Cannot access credentials file.\n" << RESET;
             return false;
         }
-        
         string hashedPass = Utils::hashPassword(password);
         string line;
         
         while (getline(file, line)) {
-            size_t pos = line.find(',');
+            size_t pos = line.find(','); //size_t is the type unsigned int 
             if (pos != string::npos) {
                 string storedUser = line.substr(0, pos);
                 string storedPass = line.substr(pos + 1);
@@ -388,15 +386,38 @@ private:
     }
 
 public:
+
     Calculator(HistoryManager& hist) : history(hist) {} //constructor 
+    // Adding operation
+    double addingOperation(double a, double b){
+        return a + b;
+    }
+    double subtractingOperation(double a, double b){
+        return a - b;
+    }
+    double multiplyingOperation(double a, double b){
+        return a * b;
+    }
+    double dividingOperation(double a, double b){
+        return a / b;
+    }
     // Perform arithmetic operation
+
     void performOperation(char op) {
         string opName;
         switch(op) {
-            case '+': opName = "Addition"; break;
-            case '-': opName = "Subtraction"; break;
-            case '*': opName = "Multiplication"; break;
-            case '/': opName = "Division"; break;
+            case '+': 
+                opName = "Addition"; 
+                break;
+            case '-': 
+                opName = "Subtraction"; 
+                break;
+            case '*': 
+                opName = "Multiplication"; 
+                break;
+            case '/': 
+                opName = "Division"; 
+                break;
         }
         
         cout << "\n" << CYAN << "====== " << opName << " ======" << RESET << "\n";
@@ -404,7 +425,9 @@ public:
         int base1, base2;
         string base1Str, base2Str, num1, num2;
         
-        if (!getBaseChoice(base1, base1Str)) return;
+        if (!getBaseChoice(base1, base1Str)) {
+            return;
+        }
         
         cout << "Enter first number: ";
         getline(cin, num1);
@@ -413,7 +436,9 @@ public:
             return;
         }
         
-        if (!getBaseChoice(base2, base2Str)) return;
+        if (!getBaseChoice(base2, base2Str)) {
+            return;
+        }
         
         cout << "Enter second number: ";
         getline(cin, num2);
@@ -429,15 +454,21 @@ public:
         
         double result;
         switch(op) {
-            case '+': result = val1 + val2; break;
-            case '-': result = val1 - val2; break;
-            case '*': result = val1 * val2; break;
+            case '+': 
+                result = addingOperation(val1, val2 );
+                break;
+            case '-': 
+                result = subtractingOperation( val1, val2);
+                break;
+            case '*': 
+                result = multiplyingOperation( val1, val2);
+                break;
             case '/':
                 if (abs(val2) < EPSILON) {
                     cout << RED << "Error: Division by zero!\n" << RESET;
                     return;
                 }
-                result = val1 / val2;
+                result = dividingOperation( val1, val2);
                 break;
             default: return;
         }
@@ -508,24 +539,54 @@ public:
             }
             
             switch(choice) {
-                case 1: performConversion("Decimal", "Binary", 10, 2); break;
-                case 2: performConversion("Decimal", "Octal", 10, 8); break;
-                case 3: performConversion("Decimal", "Hexadecimal", 10, 16); break;
-                case 4: performConversion("Binary", "Decimal", 2, 10); break;
-                case 5: performConversion("Binary", "Octal", 2, 8); break;
-                case 6: performConversion("Binary", "Hexadecimal", 2, 16); break;
-                case 7: performConversion("Octal", "Decimal", 8, 10); break;
-                case 8: performConversion("Octal", "Binary", 8, 2); break;
-                case 9: performConversion("Octal", "Hexadecimal", 8, 16); break;
-                case 10: performConversion("Hexadecimal", "Decimal", 16, 10); break;
-                case 11: performConversion("Hexadecimal", "Binary", 16, 2); break;
-                case 12: performConversion("Hexadecimal", "Octal", 16, 8); break;
-                case 13: history.displayConversionHistory(); break;
-                case 0: return;
-                default: cout << RED << "Invalid choice!\n" << RESET;
+                case 1: 
+                    performConversion("Decimal", "Binary", 10, 2); 
+                    break;
+                case 2: 
+                    performConversion("Decimal", "Octal", 10, 8); 
+                    break;
+                case 3: 
+                    performConversion("Decimal", "Hexadecimal", 10, 16); 
+                    break;
+                case 4: 
+                    performConversion("Binary", "Decimal", 2, 10); 
+                    break;
+                case 5: 
+                    performConversion("Binary", "Octal", 2, 8); 
+                    break;
+                case 6: 
+                    performConversion("Binary", "Hexadecimal", 2, 16); 
+                    break;
+                case 7: 
+                    performConversion("Octal", "Decimal", 8, 10); 
+                    break;
+                case 8: 
+                    performConversion("Octal", "Binary", 8, 2); 
+                    break;
+                case 9: 
+                    performConversion("Octal", "Hexadecimal", 8, 16); 
+                    break;
+                case 10: 
+                    performConversion("Hexadecimal", "Decimal", 16, 10); 
+                    break;
+                case 11: 
+                    performConversion("Hexadecimal", "Binary", 16, 2); 
+                    break;
+                case 12: 
+                    performConversion("Hexadecimal", "Octal", 16, 8); 
+                    break;
+                case 13: 
+                    history.displayConversionHistory(); 
+                    break;
+                case 0: 
+                    return;
+                default:
+                    cout << RED << "Invalid choice!\n" << RESET;
             }
             
-            if (choice != 0 && choice != 13) Utils::waitForEnter();
+            if (choice != 0 && choice != 13){
+             Utils::waitForEnter();
+            }
         }
     }
 };
@@ -567,16 +628,30 @@ public:
             }
             
             switch(choice) {
-                case 1: calc.performOperation('+'); break;
-                case 2: calc.performOperation('-'); break;
-                case 3: calc.performOperation('*'); break;
-                case 4: calc.performOperation('/'); break;
-                case 5: history.displayCalculationHistory(); break;
-                case 0: return;
-                default: cout << RED << "Invalid choice!\n" << RESET;
+                case 1: 
+                    calc.performOperation('+'); 
+                    break;
+                case 2: 
+                    calc.performOperation('-'); 
+                    break;
+                case 3: 
+                    calc.performOperation('*'); 
+                     break;
+                case 4: 
+                    calc.performOperation('/'); 
+                    break;
+                case 5: 
+                    history.displayCalculationHistory();
+                    break;
+                case 0: 
+                    return;
+                default: 
+                    cout << RED << "Invalid choice!\n" << RESET;
             }
             
-            if (choice >= 1 && choice <= 4) Utils::waitForEnter();
+            if (choice >= 1 && choice <= 4) {
+                Utils::waitForEnter();
+            }
         }
     }
 };
